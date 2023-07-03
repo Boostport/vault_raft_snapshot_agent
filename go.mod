@@ -1,4 +1,4 @@
-module github.com/Lucretius/vault_raft_snapshot_agent
+module github.com/Boostport/vault_raft_snapshot_agent
 
 go 1.13
 
