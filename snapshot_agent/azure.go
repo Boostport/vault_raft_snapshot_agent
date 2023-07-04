@@ -11,7 +11,7 @@ import (
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
-	"github.com/Lucretius/vault_raft_snapshot_agent/config"
+	"github.com/Boostport/vault_raft_snapshot_agent/config"
 )
 
 type AzureUploader struct {

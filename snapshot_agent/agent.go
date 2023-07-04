@@ -11,7 +11,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Lucretius/vault_raft_snapshot_agent/config"
+	"github.com/Boostport/vault_raft_snapshot_agent/config"
 	vaultApi "github.com/hashicorp/vault/api"
 )
 

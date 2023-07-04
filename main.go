@@ -9,8 +9,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Lucretius/vault_raft_snapshot_agent/config"
-	"github.com/Lucretius/vault_raft_snapshot_agent/snapshot_agent"
+	"github.com/Boostport/vault_raft_snapshot_agent/config"
+	"github.com/Boostport/vault_raft_snapshot_agent/snapshot_agent"
 )
 
 func listenForInterruptSignals() chan bool {
