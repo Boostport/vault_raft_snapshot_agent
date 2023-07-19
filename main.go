@@ -117,11 +117,11 @@ func main() {
 
 			snapshotter, c, configuredFrequency, snapshotTimeout = loadConfig()
 
-			if oldFrequency != configuredFrequency {
-				if !expires.Stop() {
-					<-expires.C
-				}
+			if !expires.Stop() {
+				<-expires.C
+			}
 
+			if oldFrequency != configuredFrequency {
 				if started.Add(configuredFrequency).After(ends) {
 					timeout := started.Add(configuredFrequency).Sub(time.Now())
 					reloadedTimeout = &timeout
@@ -129,6 +129,9 @@ func main() {
 					timeout := time.Duration(0)
 					reloadedTimeout = &timeout
 				}
+			} else {
+				timeout := ends.Sub(time.Now())
+				reloadedTimeout = &timeout
 			}
 
 		case <-done:
