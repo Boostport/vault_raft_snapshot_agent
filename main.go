@@ -2,8 +2,9 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
@@ -43,7 +44,7 @@ func main() {
 		reloadedTimeout     *time.Duration
 	)
 
-	log.Println("Reading configuration...")
+	slog.Info("Reading configuration...")
 	snapshotter, c, configuredFrequency, snapshotTimeout = loadConfig()
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -59,16 +60,16 @@ func main() {
 			case "k8s":
 				err := snapshotter.SetClientTokenFromK8sAuth(c)
 				if err != nil {
-					log.Fatalln("Unable to get token from k8s auth")
-					return
+					slog.Error(fmt.Sprintf("Unable to get token from k8s auth: %s", err))
+					os.Exit(1)
 				}
 			case "token":
 				// Do nothing as vault agent will auto-renew the token
 			default:
 				err := snapshotter.SetClientTokenFromAppRole(c)
 				if err != nil {
-					log.Fatalln("Unable to get token from approle")
-					return
+					slog.Error(fmt.Sprintf("Unable to get token from approle: %s", err))
+					os.Exit(1)
 				}
 			}
 		}
@@ -76,20 +77,22 @@ func main() {
 		leader, err := snapshotter.API.Sys().Leader()
 
 		if err != nil {
-			log.Println(err.Error())
-			log.Fatalln("Unable to determine leader instance.  The snapshot agent will only run on the leader node.  Are you running this daemon on a Vault instance?")
+			slog.Error(err.Error())
+			slog.Error("Unable to determine leader instance.  The snapshot agent will only run on the leader node.  Are you running this daemon on a Vault instance?")
+			os.Exit(1)
 		}
 
 		leaderIsSelf := leader.IsSelf
 
 		if !leaderIsSelf {
-			log.Println("Not running on leader node, skipping.")
+			slog.Info("Not running on leader node, skipping.")
 		} else {
 			if lastSuccessfulUploads == nil {
 				lastSuccessfulUploads, err = snapshotter.GetLastSuccessfulUploads(ctx)
 
 				if err != nil {
-					log.Fatalln("Unable to get last successful uploads", err)
+					slog.Error(fmt.Sprintf("Unable to get last successful uploads: %s", err))
+					os.Exit(1)
 				}
 
 				frequency = lastSuccessfulUploads.NextBackupIn(configuredFrequency)
@@ -111,7 +114,7 @@ func main() {
 			}
 
 		case <-reload:
-			log.Println("Reloading configuration...")
+			slog.Info("Reloading configuration...")
 
 			oldFrequency := configuredFrequency
 
@@ -141,11 +144,12 @@ func main() {
 }
 
 func runBackup(ctx context.Context, snapshotter *snapshot_agent.Snapshotter, snapshotTimeout time.Duration) {
-	log.Println("Starting backup.")
+	slog.Info("Starting backup.")
 	snapshot, err := os.CreateTemp("", "snapshot")
 
 	if err != nil {
-		log.Printf("Unable to create temporary snapshot file: %s\n", err)
+		slog.Error("Unable to create temporary snapshot file: %s\n", err)
+		return
 	}
 
 	defer os.Remove(snapshot.Name())
@@ -155,12 +159,14 @@ func runBackup(ctx context.Context, snapshotter *snapshot_agent.Snapshotter, sna
 
 	err = snapshotter.API.Sys().RaftSnapshotWithContext(ctx, snapshot)
 	if err != nil {
-		log.Printf("Unable to generate snapshot: %s\n", err)
+		slog.Error("Unable to generate snapshot: %s\n", err)
+		return
 	}
 
 	_, err = snapshot.Seek(0, io.SeekStart)
 	if err != nil {
-		log.Printf("Unable to seek to start of snapshot file: %s\n", err)
+		slog.Error("Unable to seek to start of snapshot file: %s\n", err)
+		return
 	}
 
 	now := time.Now().UnixNano()
@@ -172,25 +178,28 @@ func runBackup(ctx context.Context, snapshotter *snapshot_agent.Snapshotter, sna
 		snapshotPath, err := uploader.Upload(ctx, snapshot, now)
 
 		if err != nil {
-			log.Printf("Unable to upload %s snapshot (%s): %s\n", uploaderType, snapshotPath, err)
+			slog.Error("Unable to upload %s snapshot (%s): %s\n", uploaderType, snapshotPath, err)
+			return
 		}
 
-		log.Printf("Successfully uploaded %s snapshot (%s)\n", uploaderType, snapshotPath)
+		slog.Info("Successfully uploaded %s snapshot (%s)\n", uploaderType, snapshotPath)
 	}
 
-	log.Println("Backup completed.")
+	slog.Info("Backup completed.")
 }
 
 func loadConfig() (*snapshot_agent.Snapshotter, *config.Configuration, time.Duration, time.Duration) {
 	c, err := config.ReadConfig()
 
 	if err != nil {
-		log.Fatalln("Configuration could not be found")
+		slog.Error("Configuration could not be found")
+		os.Exit(1)
 	}
 
 	snapshotter, err := snapshot_agent.NewSnapshotter(c)
 	if err != nil {
-		log.Fatalln("Cannot instantiate snapshotter.", err)
+		slog.Error(fmt.Sprintf("Cannot instantiate snapshotter: %s", err))
+		os.Exit(1)
 	}
 
 	configuredFrequency, err := time.ParseDuration(c.Frequency)
@@ -205,7 +214,8 @@ func loadConfig() (*snapshot_agent.Snapshotter, *config.Configuration, time.Dura
 		snapshotTimeout, err = time.ParseDuration(c.SnapshotTimeout)
 
 		if err != nil {
-			log.Fatalln("Unable to parse snapshot timeout", err)
+			slog.Error("Unable to parse snapshot timeout", err)
+			os.Exit(1)
 		}
 	}
 

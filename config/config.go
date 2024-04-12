@@ -2,7 +2,7 @@ package config
 
 import (
 	"encoding/json"
-	"log"
+	"fmt"
 	"os"
 )
 
@@ -62,12 +62,12 @@ func ReadConfig() (*Configuration, error) {
 	}
 	cBytes, err := os.ReadFile(file)
 	if err != nil {
-		log.Fatalf("Cannot read configuration file: %v", err.Error())
+		return nil, fmt.Errorf("cannot read configuration file: %w", err)
 	}
 	c := &Configuration{}
 	err = json.Unmarshal(cBytes, &c)
 	if err != nil {
-		log.Fatalf("Cannot parse configuration file: %v", err.Error())
+		return nil, fmt.Errorf("cannot parse configuration file: %w", err)
 	}
 	return c, nil
 }
