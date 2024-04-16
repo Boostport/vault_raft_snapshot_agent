@@ -148,7 +148,7 @@ func runBackup(ctx context.Context, snapshotter *snapshot_agent.Snapshotter, sna
 	snapshot, err := os.CreateTemp("", "snapshot")
 
 	if err != nil {
-		slog.Error("Unable to create temporary snapshot file: %s\n", err)
+		slog.Error(fmt.Sprintf("Unable to create temporary snapshot file: %s", err))
 		return
 	}
 
@@ -159,13 +159,13 @@ func runBackup(ctx context.Context, snapshotter *snapshot_agent.Snapshotter, sna
 
 	err = snapshotter.API.Sys().RaftSnapshotWithContext(ctx, snapshot)
 	if err != nil {
-		slog.Error("Unable to generate snapshot: %s\n", err)
+		slog.Error(fmt.Sprintf("Unable to generate snapshot: %s", err))
 		return
 	}
 
 	_, err = snapshot.Seek(0, io.SeekStart)
 	if err != nil {
-		slog.Error("Unable to seek to start of snapshot file: %s\n", err)
+		slog.Error(fmt.Sprintf("Unable to seek to start of snapshot file: %s", err))
 		return
 	}
 
@@ -178,11 +178,11 @@ func runBackup(ctx context.Context, snapshotter *snapshot_agent.Snapshotter, sna
 		snapshotPath, err := uploader.Upload(ctx, snapshot, now)
 
 		if err != nil {
-			slog.Error("Unable to upload %s snapshot (%s): %s\n", uploaderType, snapshotPath, err)
+			slog.Error(fmt.Sprintf("Unable to upload %s snapshot (%s): %s", uploaderType, snapshotPath, err))
 			return
 		}
 
-		slog.Info("Successfully uploaded %s snapshot (%s)\n", uploaderType, snapshotPath)
+		slog.Info(fmt.Sprintf("Successfully uploaded %s snapshot (%s)", uploaderType, snapshotPath))
 	}
 
 	slog.Info("Backup completed.")
@@ -214,7 +214,7 @@ func loadConfig() (*snapshot_agent.Snapshotter, *config.Configuration, time.Dura
 		snapshotTimeout, err = time.ParseDuration(c.SnapshotTimeout)
 
 		if err != nil {
-			slog.Error("Unable to parse snapshot timeout", err)
+			slog.Error(fmt.Sprintf("Unable to parse snapshot timeout: %s", err))
 			os.Exit(1)
 		}
 	}
