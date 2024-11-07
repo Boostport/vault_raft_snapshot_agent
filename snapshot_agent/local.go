@@ -24,7 +24,7 @@ func NewLocalUploader(config *config.Configuration) (*LocalUploader, error) {
 	}, nil
 }
 
-func (u *LocalUploader) Upload(ctx context.Context, reader io.Reader, currentTs int64) (string, error) {
+func (u *LocalUploader) Upload(_ context.Context, reader io.Reader, currentTs int64) (string, error) {
 	fileName := fmt.Sprintf("%s/raft_snapshot-%d.snap", u.config.Path, currentTs)
 	file, err := os.Create(fileName)
 	if err != nil {
@@ -59,7 +59,7 @@ func (u *LocalUploader) Upload(ctx context.Context, reader io.Reader, currentTs 
 	}
 }
 
-func (u *LocalUploader) LastSuccessfulUpload(ctx context.Context) (time.Time, error) {
+func (u *LocalUploader) LastSuccessfulUpload(_ context.Context) (time.Time, error) {
 	existingSnapshots, err := u.listUploadedSnapshotsAscending("raft_snapshot-")
 
 	if err != nil {

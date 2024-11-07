@@ -40,11 +40,7 @@ func NewS3Uploader(config *config.Configuration) (*S3Uploader, error) {
 	}
 
 	if config.AWS.Endpoint != "" {
-		s3Config.EndpointResolverWithOptions = aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
-			return aws.Endpoint{
-				URL: config.AWS.Endpoint,
-			}, nil
-		})
+		s3Config.BaseEndpoint = &config.AWS.Endpoint
 	}
 
 	s3Client := s3.NewFromConfig(s3Config, func(o *s3.Options) {
