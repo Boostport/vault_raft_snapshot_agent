@@ -26,8 +26,13 @@ type S3Uploader struct {
 
 func NewS3Uploader(config *config.Configuration) (*S3Uploader, error) {
 
+	region := "us-east-1"
+	if config.AWS.Region != "" {
+		region = config.AWS.Region
+	}
+
 	s3Config, err := awsConfig.LoadDefaultConfig(context.Background(),
-		awsConfig.WithRegion(config.AWS.Region),
+		awsConfig.WithRegion(region),
 	)
 
 	if err != nil {
