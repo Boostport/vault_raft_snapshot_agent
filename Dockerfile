@@ -1,4 +1,4 @@
-FROM golang:1.20 AS builder
+FROM golang:1.24 AS builder
 
 ENV GO111MODULE=on \
   CGO_ENABLED=0 \
